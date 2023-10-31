@@ -135,7 +135,7 @@ The `via` method receives a `$notifiable` instance, which will be an instance of
 ### Queueing Notifications
 
 > **Warning**  
-> Before queueing notifications you should configure your queue and [start a worker](/docs/{{version}}/queues).
+> Before queueing notifications you should configure your queue and [start a worker](/docs/{{version}}/queues#running-the-queue-worker).
 
 Sending notifications can take time, especially if the channel needs to make an external API call to deliver the notification. To speed up your application's response time, let your notification be queued by adding the `ShouldQueue` interface and `Queueable` trait to your class. The interface and trait are already imported for all notifications generated using the `make:notification` command, so you may immediately add them to your notification class:
 
@@ -197,14 +197,28 @@ Alternatively, you may define a `withDelay` method on the notification class its
 <a name="customizing-the-notification-queue-connection"></a>
 #### Customizing The Notification Queue Connection
 
-By default, queued notifications will be queued using your application's default queue connection. If you would like to specify a different connection that should be used for a particular notification, you may define a `$connection` property on the notification class:
+By default, queued notifications will be queued using your application's default queue connection. If you would like to specify a different connection that should be used for a particular notification, you may call the `onConnection` method from your notification's constructor:
 
-    /**
-     * The name of the queue connection to use when queueing the notification.
-     *
-     * @var string
-     */
-    public $connection = 'redis';
+    <?php
+
+    namespace App\Notifications;
+
+    use Illuminate\Bus\Queueable;
+    use Illuminate\Contracts\Queue\ShouldQueue;
+    use Illuminate\Notifications\Notification;
+
+    class InvoicePaid extends Notification implements ShouldQueue
+    {
+        use Queueable;
+
+        /**
+         * Create a new notification instance.
+         */
+        public function __construct()
+        {
+            $this->onConnection('redis');
+        }
+    }
 
 Or, if you would like to specify a specific queue connection that should be used for each notification channel supported by the notification, you may define a `viaConnections` method on your notification. This method should return an array of channel name / queue connection name pairs:
 
@@ -301,7 +315,7 @@ Sometimes you may need to send a notification to someone who is not stored as a 
 
     Notification::route('mail', 'taylor@example.com')
                 ->route('vonage', '5555555555')
-                ->route('slack', 'https://hooks.slack.com/services/...')
+                ->route('slack', '#slack-channel')
                 ->route('broadcast', [new Channel('channel-name')])
                 ->notify(new InvoicePaid($invoice));
 
@@ -1390,7 +1404,7 @@ The notification will not be sent if an event listener for the `NotificationSend
     /**
      * Handle the event.
      */
-    public function handle(NotificationSending $event): void
+    public function handle(NotificationSending $event): bool
     {
         return false;
     }

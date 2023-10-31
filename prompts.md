@@ -10,8 +10,11 @@
     - [Multi-select](#multiselect)
     - [Suggest](#suggest)
     - [Search](#search)
+    - [Multi-search](#multisearch)
 - [Informational Messages](#informational-messages)
-- [Hint Text](#hint-text)
+- [Tables](#tables)
+- [Spin](#spin)
+- [Progress Bar](#progress)
 - [Terminal Considerations](#terminal-considerations)
 - [Unsupported Environments & Fallbacks](#fallbacks)
 
@@ -52,13 +55,14 @@ use function Laravel\Prompts\text;
 $name = text('What is your name?');
 ```
 
-You may also include placeholder text and a default value:
+You may also include placeholder text, a default value, and an informational hint:
 
 ```php
 $name = text(
     label: 'What is your name?',
     placeholder: 'E.g. Taylor Otwell',
-    default: $user?->name
+    default: $user?->name,
+    hint: 'This will be displayed on your profile.'
 );
 ```
 
@@ -112,12 +116,13 @@ use function Laravel\Prompts\password;
 $password = password('What is your password?');
 ```
 
-You may also include placeholder text:
+You may also include placeholder text and an informational hint:
 
 ```php
 $password = password(
     label: 'What is your password?',
-    placeholder: 'Minimum 8 characters...'
+    placeholder: 'password',
+    hint: 'Minimum 8 characters.'
 );
 ```
 
@@ -170,22 +175,15 @@ use function Laravel\Prompts\confirm;
 $confirmed = confirm('Do you accept the terms?');
 ```
 
-By default, the "Yes" answer will be pre-selected. However, you may configure the default to be "No" by passing `false` to the `default` argument:
+You may also include a default value, customized wording for the "Yes" and "No" labels, and an informational hint:
 
 ```php
 $confirmed = confirm(
     label: 'Do you accept the terms?',
     default: false,
-);
-```
-
-You may also customize the wording used for the "Yes" and "No" labels by passing the `yes` and `no` arguments:
-
-```php
-$confirmed = confirm(
-    label: 'Do you accept the terms?',
     yes: 'I accept',
-    no: 'I decline'
+    no: 'I decline',
+    hint: 'The terms must be accepted to continue.'
 );
 ```
 
@@ -224,13 +222,14 @@ $role = select(
 );
 ```
 
-You may also specify the default choice by passing the `default` argument:
+You may also specify the default choice and an informational hint:
 
 ```php
 $role = select(
     label: 'What role should the user have?',
     options: ['Member', 'Contributor', 'Owner'],
-    default: 'Owner'
+    default: 'Owner',
+    hint: 'The role may be changed at any time.'
 );
 ```
 
@@ -265,7 +264,7 @@ Unlike other prompt functions, the `select` function doesn't accept the `require
 
 ```php
 $role = select(
-    label: 'What role should the user have?'
+    label: 'What role should the user have?',
     options: [
         'member' => 'Member',
         'contributor' => 'Contributor',
@@ -275,7 +274,6 @@ $role = select(
         $value === 'owner' && User::where('role', 'owner')->exists()
             ? 'An owner already exists.'
             : null
-    }
 );
 ```
 
@@ -295,7 +293,7 @@ $permissions = multiselect(
 );
 ```
 
-You may also specify options that should be pre-selected by passing an array to the `default` argument:
+You may also specify default choices and an informational hint:
 
 ```php
 use function Laravel\Prompts\multiselect;
@@ -303,7 +301,8 @@ use function Laravel\Prompts\multiselect;
 $permissions = multiselect(
     label: 'What permissions should be assigned?',
     options: ['Read', 'Create', 'Update', 'Delete'],
-    default: ['Read', 'Create']
+    default: ['Read', 'Create'],
+    hint: 'Permissions may be updated at any time.'
 );
 ```
 
@@ -325,7 +324,7 @@ $permissions = multiselect(
 Up to five options will be displayed before the list begins to scroll. You may customize this by passing the `scroll` argument:
 
 ```php
-$role = multiselect(
+$categories = multiselect(
     label: 'What categories should be assigned?',
     options: Category::pluck('name', 'id'),
     scroll: 10
@@ -338,10 +337,20 @@ $role = multiselect(
 By default, the user may select zero or more options. You may pass the `required` argument to enforce one or more options instead:
 
 ```php
-$role = multiselect(
+$categories = multiselect(
     label: 'What categories should be assigned?',
     options: Category::pluck('name', 'id'),
     required: true,
+);
+```
+
+If you would like to customize the validation message, you may provide a string to the `required` argument:
+
+```php
+$categories = multiselect(
+    label: 'What categories should be assigned?',
+    options: Category::pluck('name', 'id'),
+    required: 'You must select at least one category',
 );
 ```
 
@@ -352,7 +361,7 @@ You may pass a closure to the `validate` argument if you need to present an opti
 
 ```
 $permissions = select(
-    label: 'What permissions should the user have?'
+    label: 'What permissions should the user have?',
     options: [
         'read' => 'Read',
         'create' => 'Create',
@@ -388,14 +397,15 @@ $name = suggest(
 )
 ```
 
-You may also include placeholder text and a default value:
+You may also include placeholder text, a default value, and an informational hint:
 
 ```php
 $name = suggest(
     label: 'What is your name?',
     options: ['Taylor', 'Dayle'],
     placeholder: 'E.g. Taylor',
-    default: $user?->name
+    default: $user?->name,
+    hint: 'This will be displayed on your profile.'
 );
 ```
 
@@ -459,7 +469,7 @@ $id = search(
 
 The closure will receive the text that has been typed by the user so far and must return an array of options. If you return an associative array then the selected option's key will be returned, otherwise its value will be returned instead.
 
-You may also include placeholder text:
+You may also include placeholder text and an informational hint:
 
 ```php
 $id = search(
@@ -467,7 +477,8 @@ $id = search(
     placeholder: 'E.g. Taylor Otwell',
     options: fn (string $value) => strlen($value) > 0
         ? User::where('name', 'like', "%{$value}%")->pluck('name', 'id')->all()
-        : []
+        : [],
+    hint: 'The user will receive an email immediately.'
 );
 ```
 
@@ -493,7 +504,7 @@ $id = search(
     label: 'Search for the user that should receive the mail',
     options: fn (string $value) => strlen($value) > 0
         ? User::where('name', 'like', "%{$value}%")->pluck('name', 'id')->all()
-        : []
+        : [],
     validate: function (int|string $value) {
         $user = User::findOrFail($value);
 
@@ -506,6 +517,99 @@ $id = search(
 
 If the `options` closure returns an associative array, then the closure will receive the selected key, otherwise, it will receive the selected value. The closure may return an error message, or `null` if the validation passes.
 
+<a name="multisearch"></a>
+### Multi-search
+
+If you have a lot of searchable options and need the user to be able to select multiple items, the `multisearch` function allows the user to type a search query to filter the results before using the arrow keys and space-bar to select options:
+
+```php
+use function Laravel\Prompts\multisearch;
+
+$ids = multisearch(
+    'Search for the users that should receive the mail',
+    fn (string $value) => strlen($value) > 0
+        ? User::where('name', 'like', "%{$value}%")->pluck('name', 'id')->all()
+        : []
+);
+```
+
+The closure will receive the text that has been typed by the user so far and must return an array of options. If you return an associative array then the selected options' keys will be returned; otherwise, their values will be returned instead.
+
+You may also include placeholder text and an informational hint:
+
+```php
+$ids = multisearch(
+    label: 'Search for the users that should receive the mail',
+    placeholder: 'E.g. Taylor Otwell',
+    options: fn (string $value) => strlen($value) > 0
+        ? User::where('name', 'like', "%{$value}%")->pluck('name', 'id')->all()
+        : [],
+    hint: 'The user will receive an email immediately.'
+);
+```
+
+Up to five options will be displayed before the list begins to scroll. You may customize this by providing the `scroll` argument:
+
+```php
+$ids = multisearch(
+    label: 'Search for the users that should receive the mail',
+    options: fn (string $value) => strlen($value) > 0
+        ? User::where('name', 'like', "%{$value}%")->pluck('name', 'id')->all()
+        : [],
+    scroll: 10
+);
+```
+
+<a name="multisearch-required"></a>
+#### Requiring a Value
+
+By default, the user may select zero or more options. You may pass the `required` argument to enforce one or more options instead:
+
+```php
+$ids = multisearch(
+    'Search for the users that should receive the mail',
+    fn (string $value) => strlen($value) > 0
+        ? User::where('name', 'like', "%{$value}%")->pluck('name', 'id')->all()
+        : [],
+    required: true,
+);
+```
+
+If you would like to customize the validation message, you may also provide a string to the `required` argument:
+
+```php
+$ids = multisearch(
+    'Search for the users that should receive the mail',
+    fn (string $value) => strlen($value) > 0
+        ? User::where('name', 'like', "%{$value}%")->pluck('name', 'id')->all()
+        : [],
+    required: 'You must select at least one user.'
+);
+```
+
+<a name="multisearch-validation"></a>
+#### Validation
+
+If you would like to perform additional validation logic, you may pass a closure to the `validate` argument:
+
+```php
+$ids = multisearch(
+    label: 'Search for the users that should receive the mail',
+    options: fn (string $value) => strlen($value) > 0
+        ? User::where('name', 'like', "%{$value}%")->pluck('name', 'id')->all()
+        : [],
+    validate: function (array $values) {
+        $optedOut = User::where('name', 'like', '%a%')->findMany($values);
+
+        if ($optedOut->isNotEmpty()) {
+            return $optedOut->pluck('name')->join(', ', ', and ').' have opted out.';
+        }
+    }
+);
+```
+
+If the `options` closure returns an associative array, then the closure will receive the selected keys; otherwise, it will receive the selected values. The closure may return an error message, or `null` if the validation passes.
+
 <a name="informational-messages"></a>
 ### Informational Messages
 
@@ -517,16 +621,87 @@ use function Laravel\Prompts\info;
 info('Package installed successfully.');
 ```
 
-<a name="hint-text"></a>
-### Hint Text
+<a name="tables"></a>
+### Tables
 
-All prompt functions also support "hint text". This text will be displayed underneath the prompt to give the user information or instructions regarding the prompt:
+The `table` function makes it easy to display multiple rows and columns of data. All you need to do is provide the column names and the data for the table:
 
 ```php
-$email = text(
-    label: 'What is your email address?',
-    hint: 'We will never share your email address with anyone.',
+use function Laravel\Prompts\table;
+
+table(
+    ['Name', 'Email'],
+    User::all(['name', 'email'])
 );
+```
+
+<a name="spin"></a>
+### Spin
+
+The `spin` function displays a spinner along with an optional message while executing a specified callback. It serves to indicate ongoing processes and returns the callback's results upon completion:
+
+```php
+use function Laravel\Prompts\spin;
+
+$response = spin(
+    fn () => Http::get('http://example.com'),
+    'Fetching response...'
+);
+```
+
+> **Warning**  
+> The `spin` function requires the `pcntl` PHP extension to animate the spinner. When this extension is not available, a static version of the spinner will appear instead.
+
+<a name="progress"></a>
+## Progress Bars
+
+For long running tasks, it can be helpful to show a progress bar that informs users how complete the task is. Using the `progress` function, Laravel will display a progress bar and advance its progress for each iteration over a given iterable value:
+
+```php
+use function Laravel\Prompts\progress;
+
+$users = progress(
+    label: 'Updating users',
+    steps: User::all(),
+    callback: fn ($user) => $this->performTask($user),
+);
+```
+
+The `progress` function acts like a map function and will return an array containing the return value of each iteration of your callback.
+
+The callback may also accept the `\Laravel\Prompts\Progress` instance, allowing you to modify the label and hint on each iteration:
+
+```php
+$users = progress(
+    label: 'Updating users',
+    steps: User::all(),
+    callback: function ($user, $progress) {
+        $progress
+            ->label("Updating {$user->name}")
+            ->hint("Created on {$user->created_at}");
+
+        return $this->performTask($user);
+    },
+    hint: 'This may take some time.',
+);
+```
+
+Sometimes, you may need more manual control over how a progress bar is advanced. First, define the total number of steps the process will iterate through. Then, advance the progress bar via the `advance` method after processing each item:
+
+```php
+$progress = progress(label: 'Updating users', steps: 10);
+
+$users = User::all();
+
+$progress->start();
+
+foreach ($users as $user) {
+    $this->performTask($user);
+
+    $progress->advance();
+}
+
+$progress->finish();
 ```
 
 <a name="terminal-considerations"></a>
